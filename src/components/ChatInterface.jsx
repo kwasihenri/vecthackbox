@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Terminal, Bot, User, Loader2, Eraser, Download, FileJson, Copy, Check, Share2 } from 'lucide-react';
 import Markdown from 'react-markdown';
-import { ai, CYBER_SYSTEM_PROMPT } from '../services/ai';
+import { aiService } from '../services/ai';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function ChatInterface({ session, onUpdateMessages, onToggleSidebar, prefillValue = '', onClearPrefill }) {
@@ -39,16 +39,7 @@ export default function ChatInterface({ session, onUpdateMessages, onToggleSideb
     setIsLoading(true);
 
     try {
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: newMessages.map(m => ({
-          role: m.role,
-          parts: [{ text: m.content }]
-        })),
-        config: {
-          systemInstruction: CYBER_SYSTEM_PROMPT
-        }
-      });
+      const response = await aiService.generateContent(newMessages);
 
       const modelMessage = {
         role: 'model',
