@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Terminal, Lightbulb, BookOpen, ShieldAlert, Cpu, Plus, History, Trash2, Edit2, Check, X } from 'lucide-react';
+import logo from '../images/logo.png';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'motion/react';
@@ -50,8 +51,8 @@ export default function Sidebar({
     <div className="w-72 border-r border-gray-800 bg-cyber-dark/80 lg:bg-cyber-dark/50 backdrop-blur-xl flex flex-col h-screen overflow-hidden">
       <div className="p-6 flex items-center justify-between border-b border-gray-800">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-cyber-green/10 border border-cyber-green/30 flex items-center justify-center">
-            <Cpu className="w-5 h-5 text-cyber-green" />
+          <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center">
+            <img src={logo} alt="VecthackBox Logo" className="w-full h-full object-cover" />
           </div>
           <div>
             <h1 className="font-mono font-bold text-cyber-green tracking-tighter uppercase">Vecthack</h1>

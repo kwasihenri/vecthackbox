@@ -1,6 +1,10 @@
+<p align="center">
+  <img src="src/images/logo.png" alt="VecthackBox Logo" width="120px" height="120px" />
+</p>
+
 # VecthackBox 🛡️💻
 
-VecthackBox is an **AI-powered cybersecurity sandbox** and mentorship platform designed to bridge the gap between theoretical networking and advanced security exploitation. Powered by Google's Gemini AI, it provides a high-fidelity environment for researchers and students to explore offensive and defensive security concepts through interactive dialogue and curated technical blueprints.
+VecthackBox is a professional **AI-powered cybersecurity sandbox** and mentorship platform designed to bridge the gap between theoretical networking and advanced security exploitation. Powered by **VecthackBox Intelligence (Gemini AI)**, it provides a high-fidelity environment for researchers and students to explore offensive and defensive security concepts through interactive dialogue and curated technical blueprints.
 
 ## 🚀 Key Features
 
