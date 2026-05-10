@@ -1,0 +1,107 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-cyber-green: #00ff41;
+  --color-cyber-blue: #00e5ff;
+  --color-cyber-dark: #0a0a0b;
+  --color-cyber-gray: #1a1a1c;
+}
+
+@layer base {
+  body {
+    @apply bg-cyber-dark text-gray-300 font-sans antialiased;
+  }
+
+  /* Scrollbar Styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-cyber-dark;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-800 rounded-full hover:bg-gray-700 transition-colors;
+  }
+}
+
+.terminal-glow {
+  box-shadow: 0 0 20px rgba(0, 255, 65, 0.1);
+}
+
+/* Custom Scrollbar */
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-gray-800 rounded-full hover:bg-cyber-green/50 transition-colors;
+  }
+  
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Typography Overrides */
+.prose pre {
+  @apply !bg-black/40 !border !border-gray-800 !my-4 !p-4 !rounded-xl overflow-x-auto;
+}
+
+.prose code {
+  @apply !text-cyber-blue !bg-cyber-blue/10 !px-1.5 !py-0.5 !rounded !font-mono before:!content-none after:!content-none;
+}
+
+.prose p {
+  @apply !text-gray-300 !leading-relaxed;
+}
+
+.prose strong {
+  @apply !text-white !font-bold;
+}
+
+.prose h1, .prose h2, .prose h3 {
+  @apply !text-white !font-black !uppercase !tracking-tight !mb-4;
+}
+
+.prose ul, .prose ol {
+  @apply !text-gray-400 !my-4 !ml-5;
+}
+
+.prose li {
+  @apply !mb-2;
+}
+
+/* Print Overrides */
+@media print {
+  nav, button, .no-print, aside, [role="navigation"], .sidebar-container {
+    display: none !important;
+  }
+  
+  body, main {
+    background: white !important;
+    color: black !important;
+  }
+
+  .prose {
+    max-width: none !important;
+    color: black !important;
+  }
+
+  div {
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Reset layout for print */
+  .flex {
+    display: block !important;
+  }
+}
+
