@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Terminal, Bot, User, Loader2, Eraser, Download, FileJson, Copy, Check, Share2 } from 'lucide-react';
+import { Send, Terminal, Bot, User, Loader2, Eraser, Download, FileJson, Copy, Check, Share2, Edit2, RotateCcw } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { ai, CYBER_SYSTEM_PROMPT } from '../services/ai';
 import { motion, AnimatePresence } from 'motion/react';
@@ -15,6 +15,8 @@ export default function ChatInterface({ session, onUpdateMessages, onToggleSideb
   }, [prefillValue, onClearPrefill]);
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [editingContent, setEditingContent] = useState('');
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -23,24 +25,33 @@ export default function ChatInterface({ session, onUpdateMessages, onToggleSideb
     }
   }, [session.messages, isLoading]);
 
-  const handleSubmit = async (e) => {
-    e?.preventDefault();
-    if (!input.trim() || isLoading) return;
+  const processMessage = async (messageContent, history, isRegeneration = false) => {
+    if (!messageContent.trim() || isLoading) return;
 
-    const userMessage = {
-      role: 'user',
-      content: input,
-      timestamp: Date.now()
-    };
+    let newMessages;
+    if (isRegeneration) {
+      // For regeneration, the message content is already the last message in history or we replace the last one
+      const updatedUserMessage = {
+        role: 'user',
+        content: messageContent,
+        timestamp: Date.now()
+      };
+      newMessages = [...history, updatedUserMessage];
+    } else {
+      const userMessage = {
+        role: 'user',
+        content: messageContent,
+        timestamp: Date.now()
+      };
+      newMessages = [...history, userMessage];
+    }
 
-    const newMessages = [...session.messages, userMessage];
     onUpdateMessages(newMessages);
-    setInput('');
     setIsLoading(true);
 
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-3.1-flash-lite",
         contents: newMessages.map(m => ({
           role: m.role,
           parts: [{ text: m.content }]
@@ -67,6 +78,39 @@ export default function ChatInterface({ session, onUpdateMessages, onToggleSideb
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSubmit = async (e) => {
+    e?.preventDefault();
+    if (!input.trim() || isLoading) return;
+    const content = input;
+    setInput('');
+    await processMessage(content, session.messages);
+  };
+
+  const handleEdit = (index, content) => {
+    setEditingIndex(index);
+    setEditingContent(content);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingIndex(null);
+    setEditingContent('');
+  };
+
+  const handleSaveEdit = async (index) => {
+    if (!editingContent.trim() || isLoading) return;
+    const content = editingContent;
+    const truncatedHistory = session.messages.slice(0, index);
+    setEditingIndex(null);
+    setEditingContent('');
+    await processMessage(content, truncatedHistory, true);
+  };
+
+  const handleResend = async (index) => {
+    const content = session.messages[index].content;
+    const truncatedHistory = session.messages.slice(0, index);
+    await processMessage(content, truncatedHistory, true);
   };
 
   const exportMarkdown = () => {
@@ -164,7 +208,7 @@ export default function ChatInterface({ session, onUpdateMessages, onToggleSideb
               key={m.timestamp + i}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`flex flex-col gap-2 ${m.role === 'user' ? 'items-end' : 'items-start'}`}
+              className={`flex flex-col gap-2 group ${m.role === 'user' ? 'items-end' : 'items-start'}`}
             >
               <div className="flex items-center gap-2 mb-1">
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
@@ -174,9 +218,29 @@ export default function ChatInterface({ session, onUpdateMessages, onToggleSideb
                 }`}>
                   {m.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                 </div>
-                <span className="text-[10px] text-gray-500 uppercase tracking-widest font-black">
-                  {m.role === 'user' ? 'Operator' : 'Mentor'}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-gray-500 uppercase tracking-widest font-black">
+                    {m.role === 'user' ? 'Operator' : 'Mentor'}
+                  </span>
+                  {m.role === 'user' && (
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => handleEdit(i, m.content)}
+                        className="p-1 hover:bg-gray-800 rounded text-gray-500 hover:text-cyber-blue transition-colors"
+                        title="Edit Message"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </button>
+                      <button 
+                        onClick={() => handleResend(i)}
+                        className="p-1 hover:bg-gray-800 rounded text-gray-500 hover:text-cyber-green transition-colors"
+                        title="Resend & Regenerate"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
               
               <div className={`flex flex-col w-full sm:max-w-[90%] md:max-w-4xl ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
@@ -185,9 +249,41 @@ export default function ChatInterface({ session, onUpdateMessages, onToggleSideb
                     ? 'bg-gray-800/30 text-gray-200 border border-gray-700/50 ml-auto'
                     : 'bg-cyber-gray/30 text-gray-300 border border-gray-800/50 terminal-glow mr-auto'
                 }`}>
-                  <div className="prose prose-invert prose-code:text-cyber-green prose-pre:bg-black/50 prose-pre:border prose-pre:border-gray-800 text-sm md:text-base leading-relaxed max-w-none break-words">
-                    <Markdown>{m.content}</Markdown>
-                  </div>
+                  {editingIndex === i ? (
+                    <div className="space-y-3">
+                      <textarea
+                        autoFocus
+                        value={editingContent}
+                        onChange={(e) => setEditingContent(e.target.value)}
+                        className="w-full bg-black/40 border border-cyber-green/30 rounded-xl p-3 text-sm font-mono text-cyber-green outline-none focus:ring-1 focus:ring-cyber-green/50 min-h-[100px] resize-none"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSaveEdit(i);
+                          }
+                          if (e.key === 'Escape') handleCancelEdit();
+                        }}
+                      />
+                      <div className="flex items-center justify-end gap-2">
+                        <button 
+                          onClick={handleCancelEdit}
+                          className="px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button 
+                          onClick={() => handleSaveEdit(i)}
+                          className="px-3 py-1.5 bg-cyber-green/10 border border-cyber-green/20 rounded-lg text-[10px] font-black uppercase tracking-widest text-cyber-green hover:bg-cyber-green hover:text-black transition-all"
+                        >
+                          Update & Send
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="prose prose-invert prose-code:text-cyber-green prose-pre:bg-black/50 prose-pre:border prose-pre:border-gray-800 text-sm md:text-base leading-relaxed max-w-none break-words">
+                      <Markdown>{m.content}</Markdown>
+                    </div>
+                  )}
                 </div>
                 <span className="mt-2 text-[8px] md:text-[10px] text-gray-700 uppercase tracking-widest font-bold">
                   {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
