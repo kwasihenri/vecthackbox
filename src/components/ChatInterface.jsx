@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Terminal, Bot, User, Loader2, Eraser, Download, FileJson, Copy, Check, Share2, Edit2, RotateCcw } from 'lucide-react';
 import Markdown from 'react-markdown';
-import { ai, CYBER_SYSTEM_PROMPT } from '../services/ai';
+import { generateWithFallback } from '../services/ai';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function ChatInterface({ session, onUpdateMessages, onToggleSidebar, prefillValue = '', onClearPrefill }) {
@@ -50,29 +50,39 @@ export default function ChatInterface({ session, onUpdateMessages, onToggleSideb
     setIsLoading(true);
 
     try {
-      const response = await ai.models.generateContent({
-        model: "gemini-3.1-flash-lite",
-        contents: newMessages.map(m => ({
-          role: m.role,
-          parts: [{ text: m.content }]
-        })),
-        config: {
-          systemInstruction: CYBER_SYSTEM_PROMPT
-        }
-      });
+      const messagesForAi = newMessages.map(m => ({
+        role: m.role,
+        parts: [{ text: m.content }]
+      }));
+
+      const { text } = await generateWithFallback(messagesForAi);
 
       const modelMessage = {
         role: 'model',
-        content: response.text || 'Error: No response from terminal. Check connection.',
+        content: text,
         timestamp: Date.now()
       };
 
       onUpdateMessages([...newMessages, modelMessage]);
     } catch (error) {
       console.error(error);
+      
+      let errorDisplay = '!! EXCEPTION DETECTED: Unable to connect to AI core. Please check your network connection.';
+      
+      const statusCode = error?.status || error?.code;
+      const errorMsg = error?.message || "";
+      
+      if (statusCode === 503 || errorMsg.includes("high demand") || errorMsg.includes("UNAVAILABLE")) {
+        errorDisplay = '!! CORE OVERLOAD: The AI models are currently experiencing extremely high demand. Spikes are temporary—please try again in a few moments.';
+      } else if (statusCode === 429) {
+        errorDisplay = '!! RATE LIMIT: Protocol throttle active. Too many requests detected. Please wait a moment.';
+      } else if (statusCode === 401 || statusCode === 403 || errorMsg.includes("API_KEY")) {
+        errorDisplay = '!! AUTH ERROR: AI core access denied. Please verify your GEMINI_API_KEY configuration.';
+      }
+
       onUpdateMessages([...newMessages, {
         role: 'model',
-        content: '!! EXCEPTION DETECTED: Unable to connect to AI core. Please check your GEMINI_API_KEY.',
+        content: errorDisplay,
         timestamp: Date.now()
       }]);
     } finally {

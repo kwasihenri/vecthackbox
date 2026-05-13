@@ -10,6 +10,15 @@ export const ai = new GoogleGenAI({
   apiKey: GEMINI_API_KEY || "" 
 });
 
+export const MODELS = [
+  "gemini-3.1-flash-lite",
+  "gemini-flash-latest",
+  "gemini-2.0-flash",
+  "gemini-pro-latest",
+  "gemini-2.5-flash",
+  "gemini-2.5-pro"
+];
+
 export const CYBER_SYSTEM_PROMPT = `
 You are the VecthackBox AI Mentor, a specialized cybersecurity and ethical hacking educator. 
 Your goal is to help students learn technical concepts, tools (like nmap, metasploit, wireshark), and methodologies (OWASP Top 10, PTES).
@@ -22,3 +31,39 @@ GUIDELINES:
 5. Format your code blocks clearly with the language specified.
 6. Remind users that AI can make mistakes and they should verify commands.
 `;
+
+export async function generateWithFallback(messages) {
+  let lastError = null;
+
+  for (const model of MODELS) {
+    try {
+      const response = await ai.models.generateContent({
+        model: model,
+        contents: messages,
+        config: {
+          systemInstruction: CYBER_SYSTEM_PROMPT
+        }
+      });
+
+      return {
+        text: response.text || 'Error: No response from terminal. Check connection.',
+        model: model
+      };
+    } catch (error) {
+      console.warn(`Model ${model} failed, trying next...`, error);
+      lastError = error;
+
+      // If it's a critical error (like invalid API key), stop trying
+      const errorMsg = error?.message || "";
+      const statusCode = error?.status || error?.code;
+      
+      if (statusCode === 401 || statusCode === 403 || errorMsg.includes("API_KEY_INVALID")) {
+        break;
+      }
+      
+      // For 503, 429, etc., continue to next model
+    }
+  }
+
+  throw lastError;
+}
